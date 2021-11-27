@@ -59,8 +59,8 @@ def config_parser():
     
     parser.add_argument("--img_train_datadir", type=str, default='/data1/lttt/Simple_Track_Image/train/*.png')
     parser.add_argument("--label_train_datadir", type=str, default='/data1/lttt/Simple_Track_Label/train/*.png') 
-    parser.add_argument("--img_test_datadir", type=str, default='/data1/lttt/Simple_Track_Image/test/*.png')
-    parser.add_argument("--label_test_datadir", type=str, default='/data1/lttt/Simple_Track_Label/test/*.png')
+    parser.add_argument("--img_val_datadir", type=str, default='/data1/lttt/Simple_Track_Image/val/*.png')
+    parser.add_argument("--label_val_datadir", type=str, default='/data1/lttt/Simple_Track_Label/val/*.png')
 
 
     return parser
@@ -84,9 +84,9 @@ def train_net():
                                 shuffle=True)
 
     val_dataset = get_dataset(name=args.name,
-                                img_path=args.img_test_datadir,
-                                mask_path=args.label_test_datadir,
-                                batch_size=4,
+                                img_path=args.img_val_datadir,
+                                mask_path=args.label_val_datadir,
+                                batch_size=1,
                                 shuffle=False)
 
     optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lrate, betas=(0.9, 0.999))
@@ -97,7 +97,7 @@ def train_net():
     global_step = 0
     pbar = tqdm(total=args.nepoch * len(train_dataset))
 
-    
+    val_data_iter = iter(val_dataset)
     TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S/}".format(datetime.now())
     log_dir = os.makedirs(os.path.join('logs', 'events', TIMESTAMP))
     writer = SummaryWriter(log_dir=log_dir)
@@ -111,7 +111,7 @@ def train_net():
 
             with torch.cuda.amp.autocast(enabled=args.amp):
                 masks_pred = net(images)
-                 # # masks_pred: batch_size x 2 x H x W (dtype:float32) ; true_masks: batch_size x H x W (dtype:torch.long)
+                # # masks_pred: batch_size x 2 x H x W (dtype:float32) ; true_masks: batch_size x H x W (dtype:torch.long)
                 loss = criterion(masks_pred, true_masks) \
                         + dice_loss(F.softmax(masks_pred, dim=1).float(),
                                     F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
@@ -123,7 +123,7 @@ def train_net():
             grad_scaler.update()
 
             writer.add_scalar('Loss/train', loss.item(),global_step)
-             # log learning rate
+            # log learning rate
             writer.add_scalar('learning rates', optimizer.param_groups[0]['lr'], global_step)
             
             pbar.update(1)
@@ -138,7 +138,24 @@ def train_net():
             #     val_score = evaluate(net, val_dataset, device)
             #     scheduler.step(val_score)
             if global_step % args.i_val == 0:
-                pass
+                try:
+                    img, mask = next(val_data_iter)
+                except StopIteration:
+                    val_data_iter = iter(val_dataset)
+                    img, mask = next(val_data_iter)
+                images = img.to(device=device, dtype=torch.float32)
+                true_masks = mask.to(device=device, dtype=torch.long)
+                net.eval()
+                with torch.no_grad():
+                    masks_pred = net(images)
+                    # # masks_pred: batch_size x 2 x H x W (dtype:float32) ; true_masks: batch_size x H x W (dtype:torch.long)
+                    loss = criterion(masks_pred, true_masks) \
+                            + dice_loss(F.softmax(masks_pred, dim=1).float(),
+                                        F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                                        multiclass=True)
+                writer.add_scalar('Loss/val', loss.item(), global_step // args.i_val)
+                net.train()
+
             if global_step % args.i_print == 0:
                 tqdm.write(f"[TRAIN] Iter: {global_step} Loss: {loss.item()} ")
             if global_step % args.i_weight == 0:
@@ -156,4 +173,3 @@ def train_net():
 if __name__ == '__main__':
 
     train_net()
-

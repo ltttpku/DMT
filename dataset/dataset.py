@@ -7,24 +7,26 @@ import os
 import torchvision.transforms as transforms
 
 class Cell(Dataset):
-    def __init__(self, img_path, label_path) -> None:
+    def __init__(self, img_path, label_path, img_size=512) -> None:
         super().__init__()
         self.imgs = glob.glob(img_path)
         self.imgs.sort()
         self.labels = glob.glob(label_path)
         self.labels.sort()
+        self.img_size = img_size
         
         assert len(self.imgs) > 0, "Can't find data;"
         self.to_tensor = transforms.ToTensor()
+        self.resize = transforms.Resize((img_size, img_size))
         
     def __len__(self):
         return len(self.imgs)
 
     def __getitem__(self, index):
         img  = PIL.Image.open(self.imgs[index]).convert('RGB')
-        img = self.to_tensor(img)
+        img = self.resize(self.to_tensor(img))
         label = PIL.Image.open(self.labels[index]).convert('1')
-        label = self.to_tensor(label)[0]
+        label = self.resize(self.to_tensor(label))[0]
 
         # img = img.permute(1, 2, 0)
         # label = label.permute(1, 2, 0)
@@ -39,7 +41,7 @@ def get_dataset(name, img_path, mask_path, batch_size=1, shuffle=True):
         shuffle=shuffle,
         drop_last=True,
         pin_memory=False,
-        num_workers=4
+        num_workers=8
     )
     return dataloader
 
