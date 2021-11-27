@@ -23,7 +23,7 @@ class Cell(Dataset):
     def __getitem__(self, index):
         img  = PIL.Image.open(self.imgs[index]).convert('RGB')
         img = self.to_tensor(img)
-        label = PIL.Image.open(self.imgs[index]).convert('1')
+        label = PIL.Image.open(self.labels[index]).convert('1')
         label = self.to_tensor(label)[0]
 
         # img = img.permute(1, 2, 0)
@@ -39,7 +39,7 @@ def get_dataset(name, img_path, mask_path, batch_size=1, shuffle=True):
         shuffle=shuffle,
         drop_last=True,
         pin_memory=False,
-        num_workers=8
+        num_workers=4
     )
     return dataloader
 
@@ -49,7 +49,8 @@ if __name__ == '__main__':
                                 img_path='/data1/lttt/Simple_Track_Image/train/*.png',
                                 mask_path='/data1/lttt/Simple_Track_Label/train/*.png',
                                 batch_size=8,
-                                shuffle=True)
+                                shuffle=False)
 
     for i,  (img, mask) in enumerate(train_data):
         print(img.shape, mask.shape)     # # [8, 3, 1024, 1024]  [8, 1024, 1024]     
+        print(mask[0])

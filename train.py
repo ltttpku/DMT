@@ -20,7 +20,7 @@ from unet import UNet
 from dataset.dataset import *
 import unet
 from utils.dice_score import dice_loss
-
+from evaluate import evaluate
 
 def config_parser():
     import configargparse
@@ -33,8 +33,12 @@ def config_parser():
     parser.add_argument('--config', is_config_file=True, default='configs/cell.txt',  # change
                         help='config file path')
     
-    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=0.00001,
-                        help='Learning rate', dest='lr')
+    # parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=5e-4,
+    #                     help='Learning rate', dest='lr')
+    parser.add_argument("--lrate", type=float, default=5e-4, 
+                        help='learning rate')
+    parser.add_argument("--lrate_decay", type=int, default=250, 
+                        help='exponential learning rate decay (in 1000 steps)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
 
     
@@ -49,6 +53,9 @@ def config_parser():
                         help='frequency of console printout and metric loggin')
     parser.add_argument("--i_weight", type=int, default=5000, 
                         help='frequency of weight ckpt saving')
+    
+    parser.add_argument("--i_schedular", type=int, default=3000, 
+                        )
     
     parser.add_argument("--img_train_datadir", type=str, default='/data1/lttt/Simple_Track_Image/train/*.png')
     parser.add_argument("--label_train_datadir", type=str, default='/data1/lttt/Simple_Track_Label/train/*.png') 
@@ -76,14 +83,15 @@ def train_net():
                                 batch_size=args.batch_size,
                                 shuffle=True)
 
-    test_dataset = get_dataset(name=args.name,
+    val_dataset = get_dataset(name=args.name,
                                 img_path=args.img_test_datadir,
                                 mask_path=args.label_test_datadir,
                                 batch_size=4,
                                 shuffle=False)
 
-    optimizer = optim.RMSprop(net.parameters(), lr=args.lr, weight_decay=1e-8, momentum=0.9)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
+    optimizer = torch.optim.Adam(params=net.parameters(), lr=args.lrate, betas=(0.9, 0.999))
+    # optimizer = optim.RMSprop(net.parameters(), lr=args.lr, weight_decay=1e-8, momentum=0.9)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
     criterion = nn.CrossEntropyLoss()
     global_step = 0
@@ -115,8 +123,20 @@ def train_net():
             grad_scaler.update()
 
             writer.add_scalar('Loss/train', loss.item(),global_step)
+             # log learning rate
+            writer.add_scalar('learning rates', optimizer.param_groups[0]['lr'], global_step)
+            
             pbar.update(1)
 
+            ###   update learning rate   ###
+            decay_rate = 0.1
+            decay_steps = args.lrate_decay * 1000
+            new_lrate = args.lrate * (decay_rate ** (global_step / decay_steps))
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = new_lrate
+            # if global_step % args.i_schedular == 0 or global_step == 10:
+            #     val_score = evaluate(net, val_dataset, device)
+            #     scheduler.step(val_score)
             if global_step % args.i_val == 0:
                 pass
             if global_step % args.i_print == 0:
@@ -131,7 +151,6 @@ def train_net():
                 }, path)
             global_step += 1
             
-
 
 
 if __name__ == '__main__':

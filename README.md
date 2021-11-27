@@ -6,7 +6,7 @@ This repo is created for the project of "Fundamental of Digital Media Tech".
  + You could modify any parameter in cell.txt.
 
 ### TODO List
- + fix mask groundtruth ! 
+ + visualization!
  + need val code as well as test-time code
  + data augumentation
  + batch_size too small(OOM shocks me), may need DDP
