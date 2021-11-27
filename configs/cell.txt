@@ -1,0 +1,14 @@
+expname = cell
+basedir = ./logs
+name = Cell
+
+
+img_train_datadir = /data1/lttt/Simple_Track_Image/train/*.png
+label_train_datadir = /data1/lttt/Simple_Track_Label/train/*.png
+
+img_test_datadir = /data1/lttt/Simple_Track_Image/test/*.png
+label_test_datadir = /data1/lttt/Simple_Track_Label/test/*.png
+
+batch_size = 1
+nepoch = 1001
+
