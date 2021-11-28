@@ -153,7 +153,9 @@ def train_net():
                             + dice_loss(F.softmax(masks_pred, dim=1).float(),
                                         F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                                         multiclass=True)
-                writer.add_scalar('Loss/val', loss.item(), global_step // args.i_val)
+                pred_zero_one = torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu() ## [0]: get first one in batch_sizse
+                writer.add_image('pred_mask/val', torch.cat((pred_zero_one, true_masks[0].float().cpu()), dim=-1), global_step, dataformats='HW')
+                writer.add_scalar('Loss/val', loss.item(), global_step)
                 net.train()
 
             if global_step % args.i_print == 0:
@@ -164,7 +166,6 @@ def train_net():
                     'global_step': global_step,
                     'unet_state_dict': net.state_dict(), 
                     'optimizer_state_dict': optimizer.state_dict(),
-
                 }, path)
             global_step += 1
             

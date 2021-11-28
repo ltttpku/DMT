@@ -9,6 +9,6 @@ label_train_datadir = /data1/lttt/Simple_Track_Label/train/*.png
 img_val_datadir = /data1/lttt/Simple_Track_Image/val/*.png
 label_val_datadir = /data1/lttt/Simple_Track_Label/val/*.png
 
-batch_size = 1
+batch_size = 4
 nepoch = 1001
 
