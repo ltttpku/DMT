@@ -22,6 +22,8 @@ import unet
 from utils.dice_score import dice_loss
 # from evaluate import evaluate
 
+from dataset.augment import *
+
 def config_parser():
     import configargparse
     parser = configargparse.ArgumentParser()
@@ -62,6 +64,7 @@ def config_parser():
     parser.add_argument("--img_val_datadir", type=str, default='/data1/lttt/Simple_Track_Image/val/*.png')
     parser.add_argument("--label_val_datadir", type=str, default='/data1/lttt/Simple_Track_Label/val/*.png')
 
+    parser.add_argument("--data_augment", type=str, default='Yes')
 
     return parser
 
@@ -77,11 +80,17 @@ def train_net():
     net = UNet(n_channels=3, n_classes=2, bilinear=True)
     net.to(device)
     
+    if args.data_augment == "Yes":
+        data_augment = strong_aug()
+    else:
+        data_augment = None
+        
     train_dataset = get_dataset(name=args.name,
                                 img_path=args.img_train_datadir,
                                 mask_path=args.label_train_datadir,
                                 batch_size=args.batch_size,
-                                shuffle=True)
+                                shuffle=True,
+                                transform = data_augment)
 
     val_dataset = get_dataset(name=args.name,
                                 img_path=args.img_val_datadir,

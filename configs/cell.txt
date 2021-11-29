@@ -3,12 +3,12 @@ basedir = ./logs
 name = Cell
 
 
-img_train_datadir = /data1/lttt/Simple_Track_Image/train/*.png
-label_train_datadir = /data1/lttt/Simple_Track_Label/train/*.png
+img_train_datadir = E:/U-RISC_dataset/Simple_Track_Image/train/*.png
+label_train_datadir = E:/U-RISC_dataset/Simple_Track_Label/train/*.png
 
-img_val_datadir = /data1/lttt/Simple_Track_Image/val/*.png
-label_val_datadir = /data1/lttt/Simple_Track_Label/val/*.png
+img_val_datadir = E:/U-RISC_dataset/Simple_Track_Image/val/*.png
+label_val_datadir = E:/U-RISC_dataset/Simple_Track_Label/val/*.png
 
-batch_size = 4
+batch_size = 1
 nepoch = 1001
 

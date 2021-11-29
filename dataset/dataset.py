@@ -41,7 +41,7 @@ def get_dataset(name, img_path, mask_path, batch_size=1, shuffle=True):
         shuffle=shuffle,
         drop_last=True,
         pin_memory=False,
-        num_workers=8
+        num_workers=4
     )
     return dataloader
 
