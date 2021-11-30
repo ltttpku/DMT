@@ -48,8 +48,8 @@ def get_dataset(name, img_path, mask_path, batch_size=1, shuffle=True):
 
 if __name__ == '__main__':
     train_data = get_dataset(name='Cell',
-                                img_path='/data1/lttt/Simple_Track_Image/train/*.png',
-                                mask_path='/data1/lttt/Simple_Track_Label/train/*.png',
+                                img_path='E:/U-RISC_dataset/Simple_Track_Image/train/*.png',
+                                mask_path='E:/U-RISC_dataset/Simple_Track_Label/train/*.png',
                                 batch_size=8,
                                 shuffle=False)
 

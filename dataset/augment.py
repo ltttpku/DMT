@@ -45,7 +45,7 @@ def strong_aug(p=0.5, crop_size=(512, 512)):
         ], p=0.3),
         RGBShift(),
         HueSaturationValue(p=0.9),
-        ToTensorV2() #add by xxy
+        # ToTensorV2() #add by xxy
     ], p=p)
     
     # train_transform = Compose([

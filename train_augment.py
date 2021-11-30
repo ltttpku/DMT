@@ -23,6 +23,7 @@ from utils.dice_score import dice_loss
 # from evaluate import evaluate
 
 from dataset.augment import *
+from dataset.data_io.process_functions import random_crop, image_read, random_mask
 
 def config_parser():
     import configargparse
@@ -154,6 +155,7 @@ def train_net():
                     img, mask = next(val_data_iter)
                 images = img.to(device=device, dtype=torch.float32)
                 true_masks = mask.to(device=device, dtype=torch.long)
+                
                 net.eval()
                 with torch.no_grad():
                     masks_pred = net(images)
@@ -164,6 +166,7 @@ def train_net():
                                         multiclass=True)
                 pred_zero_one = torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu() ## [0]: get first one in batch_sizse
                 writer.add_image('pred_mask/val', torch.cat((pred_zero_one, true_masks[0].float().cpu()), dim=-1), global_step, dataformats='HW')
+                # writer.add_image('pred_mask/val', torch.cat((pred_zero_one, true_masks[0].float().cpu()*255), dim=-1), global_step, dataformats='HW')
                 writer.add_scalar('Loss/val', loss.item(), global_step)
                 net.train()
 

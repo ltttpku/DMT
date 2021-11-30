@@ -14,8 +14,18 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import random
 
-# if you want to run dataset.py, please import augment
+
+# if you want to run dataset.py, please import these stuff
 # import augment
+# from data_io.process_functions import random_crop, image_read, random_mask
+# instead of
+from dataset.data_io.process_functions import random_crop, image_read, random_mask
+
+def normalize(img):
+    img = img.astype(np.float32)
+    img = img /127.5
+    img = img - 1
+    return img
 
 class Cell(Dataset):
     def __init__(self, img_path, label_path, img_size=512, transform = None) -> None:
@@ -35,39 +45,54 @@ class Cell(Dataset):
         return len(self.imgs)
 
     def __getitem__(self, index):
-        img  = PIL.Image.open(self.imgs[index]).convert('RGB')
-        label = PIL.Image.open(self.labels[index]).convert('1')
-        
-        # img = np.array(img)
-        # label = np.array(label) # converted to "True"(?), I don't know if its will cause some trouble
-        
-        # img = img.permute(1, 2, 0)
-        # label = label.permute(1, 2, 0)
+        img  = image_read(self.imgs[index])
+        img = cv2.resize(img, (512,512))
+        label = image_read(self.labels[index])[..., 0]
+        label = cv2.resize(label, (512,512))
         
         if self.transform:
-            img = np.array(img)
-            img = self.transform(image = img)["image"]
+            aug_func = self.transform
+            augmenter = aug_func(image=img, mask=label)
+            img, label = augmenter["image"], augmenter["mask"]
+            # label = 1 - label/255.
+            # label = (label > 0.5).astype(np.float32)
+            # label = label/255.
+            # label = (label < 0.9).astype(np.float32)
+            # img, label = random_mask(img, label, num_mask=25, min_size=10, max_size=256)
+            
         else:
-            img = self.resize(self.to_tensor(img))
-            label = self.resize(self.to_tensor(label))[0]
+            # label = 1 - label/255.
+            # label = (label > 0.5).astype(np.float32)
+            pass
+        
+        label = label/255.
+        img = normalize(img)
+        img = np.swapaxes(img, 2, 1)
+        img = np.swapaxes(img, 1, 0)
+        img = torch.from_numpy(img)
+        label = torch.from_numpy(label)
         
         return img, label
 
-def visualize_augmentations(dataset, idx=0, samples=10, cols=5):
+def visualize_augmentations(dataset, idx=0, samples=12, cols=6):
     dataset = copy.deepcopy(dataset)
-    dataset.transform = A.Compose([t for t in dataset.transform if not isinstance(t, (A.Normalize, ToTensorV2))])
-    rows = samples // cols
+    dataset.transform = A.Compose([t for t in dataset.transform if not isinstance(t, (A.Normalize))])
+    rows = samples // cols * 2
     figure, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(12, 6))
     for i in range(samples):
-        image, _ = dataset[idx]
-        ax.ravel()[i].imshow(image)
-        ax.ravel()[i].set_axis_off()
+        img, msk = dataset[idx]
+        img = np.swapaxes(img, 0, 1)
+        img = np.swapaxes(img, 1, 2)
+        ax.ravel()[2*i].imshow(msk*255)
+        ax.ravel()[2*i].set_axis_off()
+        ax.ravel()[2*i+1].imshow(img)
+        ax.ravel()[2*i+1].set_axis_off()
     plt.tight_layout()
     plt.show()
 
 def get_dataset(name, img_path, mask_path, batch_size=1, shuffle=True, transform = None):
-    dataset = globals()[name](img_path, mask_path)
-    # dataset = Cell(img_path = img_path, label_path = mask_path, transform = transform)
+    # dataset = globals()[name](img_path, mask_path)
+    dataset = Cell(img_path = img_path, label_path = mask_path, transform = transform)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
