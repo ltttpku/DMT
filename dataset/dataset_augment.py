@@ -54,18 +54,19 @@ class Cell(Dataset):
             aug_func = self.transform
             augmenter = aug_func(image=img, mask=label)
             img, label = augmenter["image"], augmenter["mask"]
-            # label = 1 - label/255.
-            # label = (label > 0.5).astype(np.float32)
+            label = 1 - label/255.
+            label = (label > 0.1).astype(np.float32)
             # label = label/255.
             # label = (label < 0.9).astype(np.float32)
             # img, label = random_mask(img, label, num_mask=25, min_size=10, max_size=256)
             
         else:
-            # label = 1 - label/255.
-            # label = (label > 0.5).astype(np.float32)
+            label = 1 - label/255.
+            label = (label > 0.1).astype(np.float32)
             pass
         
-        label = label/255.
+        # label = label/255.
+        label = 1 - label
         img = normalize(img)
         img = np.swapaxes(img, 2, 1)
         img = np.swapaxes(img, 1, 0)

@@ -17,7 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 # from utils.dice_score import dice_loss
 # from evaluate import evaluate
 from unet import UNet
-from dataset.dataset_augment import *
+from dataset.dataset import *
 import unet
 from utils.dice_score import dice_loss
 # from evaluate import evaluate
