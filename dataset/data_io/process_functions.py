@@ -11,6 +11,7 @@ sys.dont_write_bytecode = True
 import numpy as np
 import cv2
 import random
+import copy
 from skimage.draw import random_shapes
 
 def image_read(img_path):
